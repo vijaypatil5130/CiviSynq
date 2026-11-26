@@ -19,7 +19,6 @@ function Dashboard() {
   const [complaints, setComplaints] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
@@ -30,15 +29,10 @@ function Dashboard() {
     try {
       const [complaintResponse, notificationResponse] = await Promise.all([
         fetch(`${API_URL}/complaints/my-complaints`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         }),
-
         fetch(`${API_URL}/notifications`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+          headers: { Authorization: `Bearer ${token}` }
         })
       ]);
 
@@ -46,21 +40,16 @@ function Dashboard() {
       const notificationData = await notificationResponse.json();
 
       if (!complaintResponse.ok) {
-        throw new Error(
-          complaintData.message || 'Unable to load complaints.'
-        );
+        throw new Error(complaintData.message || 'Unable to load complaints.');
       }
 
       if (!notificationResponse.ok) {
-        throw new Error(
-          notificationData.message || 'Unable to load notifications.'
-        );
+        throw new Error(notificationData.message || 'Unable to load notifications.');
       }
 
       setComplaints(complaintData.complaints || []);
       setNotifications(notificationData.notifications || []);
       setUnreadCount(notificationData.unreadCount || 0);
-
       setError('');
     } catch (err) {
       setError(err.message);
@@ -132,9 +121,7 @@ function Dashboard() {
           `${API_URL}/notifications/${notification._id}/read`,
           {
             method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
 
@@ -166,9 +153,7 @@ function Dashboard() {
     try {
       const response = await fetch(`${API_URL}/notifications/read-all`, {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!response.ok) {
@@ -190,22 +175,16 @@ function Dashboard() {
   return (
     <div className="dashboard-page">
 
-      {/* Header */}
       <header className="dashboard-header">
-
         <Link to="/" className="auth-logo">
           Civi<span>Synq</span>
         </Link>
 
         <div className="dashboard-header-actions">
-
           <div className="notification-wrapper">
-
             <button
               className="notification-bell"
-              onClick={() =>
-                setShowNotifications((previous) => !previous)
-              }
+              onClick={() => setShowNotifications((previous) => !previous)}
               aria-label="Notifications"
               aria-expanded={showNotifications}
             >
@@ -221,7 +200,6 @@ function Dashboard() {
 
             {showNotifications && (
               <div className="notification-dropdown">
-
                 <div className="notification-heading">
                   <div>
                     <h3>Notifications</h3>
@@ -229,17 +207,13 @@ function Dashboard() {
                   </div>
 
                   {unreadCount > 0 && (
-                    <button
-                      className="mark-all-button"
-                      onClick={markAllRead}
-                    >
+                    <button className="mark-all-button" onClick={markAllRead}>
                       Mark all read
                     </button>
                   )}
                 </div>
 
                 <div className="notification-list">
-
                   {notifications.length === 0 ? (
                     <div className="empty-notifications">
                       <span>🔔</span>
@@ -252,55 +226,35 @@ function Dashboard() {
                         className={`notification-item ${
                           notification.isRead ? 'read' : 'unread'
                         }`}
-                        onClick={() =>
-                          markNotificationRead(notification)
-                        }
+                        onClick={() => markNotificationRead(notification)}
                       >
                         <div className="notification-dot"></div>
 
                         <div className="notification-details">
                           <h4>{notification.title}</h4>
                           <p>{notification.message}</p>
-
-                          <span>
-                            {formatDate(notification.createdAt)}
-                          </span>
+                          <span>{formatDate(notification.createdAt)}</span>
                         </div>
                       </button>
                     ))
                   )}
-
                 </div>
               </div>
             )}
-
           </div>
 
-          <button
-            className="dashboard-logout"
-            onClick={handleLogout}
-          >
+          <button className="dashboard-logout" onClick={handleLogout}>
             Logout
           </button>
-
         </div>
       </header>
 
       <main className="dashboard-content">
 
-        {/* Welcome Section */}
         <section className="dashboard-welcome">
-
           <p className="dashboard-label">CITIZEN DASHBOARD</p>
-
-          <h1>
-            Welcome, {user?.fullName || 'Citizen'}!
-          </h1>
-
-          <p>
-            Together, let's make Hubballi-Dharwad a better place.
-          </p>
-
+          <h1>Welcome, {user?.fullName || 'Citizen'}!</h1>
+          <p>Together, let's make Hubballi-Dharwad a better place.</p>
         </section>
 
         {error && (
@@ -310,22 +264,16 @@ function Dashboard() {
           </div>
         )}
 
-        {/* Statistics */}
         <section className="dashboard-stats-section">
-
           <div className="section-heading">
             <div>
               <h2 className="overview-heading">
                 Your&nbsp;Complaint&nbsp;Overview
               </h2>
-
               <p>Track the progress of your reported issues.</p>
             </div>
 
-            <button
-              className="dashboard-refresh"
-              onClick={fetchDashboardData}
-            >
+            <button className="dashboard-refresh" onClick={fetchDashboardData}>
               ↻ Refresh
             </button>
           </div>
@@ -345,7 +293,9 @@ function Dashboard() {
             </div>
 
             <div className="stat-card progress-stat">
-              <div className="stat-icon">🔄</div>
+              <div className="stat-icon">
+                <span className="progress-loading-spinner"></span>
+              </div>
               <p>In Progress</p>
               <h2>{loading ? '...' : inProgressCount}</h2>
             </div>
@@ -359,19 +309,15 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* Main Dashboard Cards */}
         <section className="dashboard-cards">
 
           <div className="dashboard-card report-card">
             <div className="dashboard-card-icon">📢</div>
-
             <h2>Report an Issue</h2>
-
             <p>
               Report problems like garbage dumping, damaged roads,
               water issues and other civic problems.
             </p>
-
             <button onClick={() => navigate('/report-issue')}>
               Report Now →
             </button>
@@ -379,14 +325,11 @@ function Dashboard() {
 
           <div className="dashboard-card complaints-card">
             <div className="dashboard-card-icon">📍</div>
-
             <h2>My Complaints</h2>
-
             <p>
               View your submitted complaints and track their
               progress and current status.
             </p>
-
             <button onClick={() => navigate('/my-complaints')}>
               View Complaints →
             </button>
@@ -394,7 +337,6 @@ function Dashboard() {
 
           <div className="dashboard-card profile-card">
             <div className="dashboard-card-icon">👤</div>
-
             <h2>My Profile</h2>
 
             <div className="profile-information">
@@ -402,12 +344,10 @@ function Dashboard() {
                 <strong>Name</strong>
                 <span>{user?.fullName || 'Citizen'}</span>
               </p>
-
               <p>
                 <strong>Email</strong>
                 <span>{user?.email || 'Not available'}</span>
               </p>
-
               <p>
                 <strong>Phone</strong>
                 <span>{user?.phone || 'Not available'}</span>
@@ -417,14 +357,11 @@ function Dashboard() {
             <button onClick={() => navigate('/profile')}>
               Manage Profile →
             </button>
-
           </div>
 
         </section>
 
-        {/* Recent Complaints */}
         <section className="recent-complaints-section">
-
           <div className="section-heading">
             <div>
               <h2>Recent Complaint Updates</h2>
@@ -445,24 +382,19 @@ function Dashboard() {
               <span>📋</span>
               <h3>No complaints reported yet</h3>
               <p>Start by reporting a civic issue in your area.</p>
-
               <button onClick={() => navigate('/report-issue')}>
                 Report Your First Issue
               </button>
             </div>
           ) : (
             <div className="recent-complaints-list">
-
               {recentComplaints.map((complaint) => (
                 <div className="recent-complaint" key={complaint._id}>
-
                   <div className="recent-complaint-info">
                     <h3>{complaint.title}</h3>
-
                     <p>
                       {complaint.category} · {complaint.location}
                     </p>
-
                     <span>
                       Last updated: {formatDate(
                         complaint.updatedAt || complaint.createdAt
@@ -477,16 +409,12 @@ function Dashboard() {
                   >
                     {complaint.status}
                   </span>
-
                 </div>
               ))}
-
             </div>
           )}
-
         </section>
 
-        {/* Footer */}
         <footer className="dashboard-footer">
           <p>
             © {new Date().getFullYear()} CiviSynq.

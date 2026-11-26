@@ -299,7 +299,7 @@
   cursor: pointer;
 }
 
-/* Statistics */
+/* Statistics Cards */
 
 .dashboard-stats {
   display: grid;
@@ -308,12 +308,71 @@
 }
 
 .stat-card {
-  background: white;
   padding: 23px;
-  border: 1px solid #e5eaf2;
+  border: 1px solid transparent;
   border-radius: 13px;
-  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 4px 15px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 9px 22px rgba(15, 23, 42, 0.12);
+}
+
+/* Total Complaints - Teal */
+
+.stat-card.total-stat {
+  background: #99f6e4;
+  border-color: #5eead4;
+  color: #115e59;
+}
+
+.total-stat p,
+.total-stat h2 {
+  color: #115e59;
+}
+
+/* Pending - Darker Light Red */
+
+.stat-card.pending-stat {
+  background: #fca5a5;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.pending-stat p,
+.pending-stat h2 {
+  color: #991b1b;
+}
+
+/* In Progress - Light Blue */
+
+.stat-card.progress-stat {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.progress-stat p,
+.progress-stat h2 {
+  color: #1d4ed8;
+}
+
+/* Resolved - Green */
+
+.stat-card.resolved-stat {
+  background: #86efac;
+  border-color: #4ade80;
+  color: #166534;
+}
+
+.resolved-stat p,
+.resolved-stat h2 {
+  color: #166534;
+}
+
+/* Statistics Icons */
 
 .stat-icon {
   width: 42px;
@@ -324,32 +383,53 @@
   border-radius: 10px;
   font-size: 20px;
   margin-bottom: 17px;
-  background: #eff6ff;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.total-stat .stat-icon {
+  color: #115e59;
+}
+
+.pending-stat .stat-icon {
+  color: #991b1b;
+}
+
+.progress-stat .stat-icon {
+  color: #1d4ed8;
+}
+
+.resolved-stat .stat-icon {
+  color: #166534;
 }
 
 .stat-card p {
   margin: 0;
-  color: #64748b;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .stat-card h2 {
   margin: 10px 0 0;
   font-size: 30px;
-  color: #172554;
+  font-weight: 800;
 }
 
-.pending-stat .stat-icon {
-  background: #fff7ed;
+/* In Progress Loading Spinner */
+
+.progress-loading-spinner {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  border: 3px solid rgba(37, 99, 235, 0.2);
+  border-top-color: #1d4ed8;
+  border-radius: 50%;
+  animation: progress-spin 0.8s linear infinite;
 }
 
-.progress-stat .stat-icon {
-  background: #eff6ff;
-}
-
-.resolved-stat .stat-icon {
-  background: #ecfdf5;
+@keyframes progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Main Cards */
@@ -506,18 +586,18 @@
 }
 
 .recent-status.pending {
-  background: #fff7ed;
-  color: #c2410c;
+  background: #fca5a5;
+  color: #991b1b;
 }
 
 .recent-status.in-progress {
-  background: #eff6ff;
+  background: #dbeafe;
   color: #1d4ed8;
 }
 
 .recent-status.resolved {
-  background: #ecfdf5;
-  color: #047857;
+  background: #86efac;
+  color: #166534;
 }
 
 .recent-empty {
