@@ -27,35 +27,54 @@ if (!process.env.MONGO_URI || !process.env.JWT_SECRET) {
 const uploadsDirectory = path.join(__dirname, 'uploads');
 fs.mkdirSync(uploadsDirectory, { recursive: true });
 
-// Security headers.
-// Cross-origin resource policy allows the React frontend to display uploaded photos.
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false
-  })
-);
-
 // CORS configuration.
 const allowedOrigins = [
+  'https://civisynq-frontend.onrender.com',
   process.env.FRONTEND_URL,
   ...(process.env.NODE_ENV !== 'production'
-    ? ['http://localhost:5173', 'http://127.0.0.1:5173']
+    ? [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173'
+      ]
     : [])
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .map(origin => origin.trim().replace(/\/+$/, ''));
 
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests without an Origin header.
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = origin.trim().replace(/\/+$/, '');
+
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    console.error('CORS blocked origin:', origin);
+    return callback(null, false);
+  },
+
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+
+  allowedHeaders: ['Content-Type', 'Authorization'],
+
+  optionsSuccessStatus: 204
+};
+
+// Handle CORS and browser preflight requests.
+app.use(cors(corsOptions));
+
+// Security headers.
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests without an Origin header, such as server-to-server or Postman requests.
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error('This origin is not allowed by CORS.'));
+  helmet({
+    crossOriginResourcePolicy: {
+      policy: 'cross-origin'
     },
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    contentSecurityPolicy: false
   })
 );
 
@@ -63,11 +82,14 @@ app.use(
 app.use(express.json({ limit: '10kb' }));
 
 // Serve uploaded complaint images.
-app.use('/uploads', express.static(uploadsDirectory, {
-  dotfiles: 'deny',
-  index: false,
-  maxAge: '1d'
-}));
+app.use(
+  '/uploads',
+  express.static(uploadsDirectory, {
+    dotfiles: 'deny',
+    index: false,
+    maxAge: '1d'
+  })
+);
 
 // Rate limiting for authentication endpoints.
 const loginLimiter = rateLimit({
@@ -142,22 +164,21 @@ app.use((error, req, res, next) => {
     });
   }
 
-  if (error.message === 'This origin is not allowed by CORS.') {
-    return res.status(403).json({
-      message: error.message
-    });
-  }
-
-  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+  if (
+    error instanceof SyntaxError &&
+    error.status === 400 &&
+    'body' in error
+  ) {
     return res.status(400).json({
       message: 'Invalid JSON request body.'
     });
   }
 
   res.status(error.status || 500).json({
-    message: error.status && error.status < 500
-      ? error.message
-      : 'Something went wrong. Please try again.'
+    message:
+      error.status && error.status < 500
+        ? error.message
+        : 'Something went wrong. Please try again.'
   });
 });
 
@@ -165,6 +186,8 @@ app.use((error, req, res, next) => {
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('MongoDB Connected Successfully!');
+
+    console.log('Allowed frontend origins:', allowedOrigins);
 
     app.listen(PORT, () => {
       console.log(`CiviSynq Server running on port ${PORT}`);
