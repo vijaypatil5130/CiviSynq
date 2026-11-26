@@ -161,9 +161,9 @@ function ReportIssue() {
             required
           >
             <option value="">Select issue category</option>
-            <option value="Road">Road Damage</option>
+            <option value="Road Damage">Road Damage</option>
+<option value="Water Supply">Water Supply</option>
             <option value="Garbage">Garbage / Waste</option>
-            <option value="Water">Water Supply</option>
             <option value="Electricity">Electricity</option>
             <option value="Drainage">Drainage</option>
             <option value="Streetlight">Streetlight</option>

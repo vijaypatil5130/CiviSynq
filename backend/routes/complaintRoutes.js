@@ -18,7 +18,7 @@ const allowedCategories = [
   'Other'
 ];
 
-// Upload an image buffer to Cloudinary
+// Upload image buffer to Cloudinary
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -35,7 +35,8 @@ const uploadToCloudinary = (buffer) => {
       }
     );
 
-    Readable.from(buffer).pipe(uploadStream);
+    // Send the complete image buffer as one stream chunk
+    Readable.from([buffer]).pipe(uploadStream);
   });
 };
 
@@ -111,8 +112,8 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     let parsedLongitude;
 
     if (
-      latitude !== undefined && latitude !== '' ||
-      longitude !== undefined && longitude !== ''
+      (latitude !== undefined && latitude !== '') ||
+      (longitude !== undefined && longitude !== '')
     ) {
       parsedLatitude = Number(latitude);
       parsedLongitude = Number(longitude);
@@ -138,6 +139,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       uploadedImage = await uploadToCloudinary(req.file.buffer);
     }
 
+    // Save complaint in MongoDB
     const complaint = new Complaint({
       title: cleanTitle,
       category: cleanCategory,
@@ -157,12 +159,15 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     });
 
   } catch (error) {
-    // Remove uploaded Cloudinary image if saving the complaint failed
+    // Remove uploaded Cloudinary image if saving fails
     if (uploadedImage?.public_id) {
       try {
         await cloudinary.uploader.destroy(uploadedImage.public_id);
       } catch (cleanupError) {
-        console.error('Cloudinary cleanup failed:', cleanupError.message);
+        console.error(
+          'Cloudinary cleanup failed:',
+          cleanupError.message
+        );
       }
     }
 
@@ -174,7 +179,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
   }
 });
 
-// Get complaints submitted by the logged-in citizen
+// Get complaints submitted by logged-in citizen
 router.get('/my-complaints', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'citizen') {
