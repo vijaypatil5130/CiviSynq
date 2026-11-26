@@ -262,7 +262,7 @@ function App() {
               your neighbourhood.
             </p>
           </div>
-          <a href="#login" className="cta-button">
+          <a href="/login" className="cta-button">
             Join CiviSynq <span>↗</span>
           </a>
         </section>
