@@ -63,8 +63,10 @@ function App() {
         </div>
 
         <div className="nav-actions">
-          <a href="#login" className="login-link">Log in</a>
-          <a href="#report" className="nav-button">Get Started <span>↗</span></a>
+          <a href="/login" className="login-link">Log in</a>
+          <a href="/register" className="nav-button">
+            Get Started <span>↗</span>
+          </a>
         </div>
       </nav>
 
@@ -89,7 +91,7 @@ function App() {
             </p>
 
             <div className="hero-actions">
-              <a href="#report" className="primary-button">
+              <a href="/login" className="primary-button">
                 Report an issue <span>↗</span>
               </a>
               <a href="#how-it-works" className="secondary-button">
@@ -234,7 +236,7 @@ function App() {
               Three simple steps to turn your concerns into meaningful
               community action.
             </p>
-            <a href="#report" className="primary-button">
+            <a href="/register" className="primary-button">
               Get started <span>↗</span>
             </a>
           </div>
@@ -262,7 +264,7 @@ function App() {
               your neighbourhood.
             </p>
           </div>
-          <a href="/login" className="cta-button">
+          <a href="/register" className="cta-button">
             Join CiviSynq <span>↗</span>
           </a>
         </section>
