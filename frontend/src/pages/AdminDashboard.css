@@ -602,3 +602,28 @@
   color: #ffffff !important;
   opacity: 1 !important;
 }
+/* UPDATE STATUS DROPDOWN COLORS */
+
+/* Pending - Red */
+.admin-status-control select:has(option:checked[value="Pending"]) {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 2px solid #dc2626 !important;
+  font-weight: 700;
+}
+
+/* In Progress - Blue */
+.admin-status-control select:has(option:checked[value="In Progress"]) {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border: 2px solid #2563eb !important;
+  font-weight: 700;
+}
+
+/* Resolved - Green */
+.admin-status-control select:has(option:checked[value="Resolved"]) {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border: 2px solid #16a34a !important;
+  font-weight: 700;
+}
