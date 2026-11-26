@@ -127,6 +127,8 @@
   cursor: not-allowed;
 }
 
+/* STATISTICS CARDS */
+
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -135,45 +137,56 @@
 }
 
 .admin-stat {
-  background: white;
-  padding: 24px;
-  border-radius: 13px;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
-  border-top: 4px solid #64748b;
+  padding: 25px;
+  border-radius: 14px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.10);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+}
+
+.admin-stat:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
 }
 
 .admin-stat span {
-  color: #64748b;
+  display: block;
+  color: white;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .admin-stat h2 {
-  font-size: 34px;
-  margin: 12px 0 5px;
+  color: white;
+  font-size: 38px;
+  margin: 14px 0 7px;
+  font-weight: 800;
 }
 
 .admin-stat p {
   font-size: 13px;
-  color: #94a3b8;
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
+  font-weight: 500;
 }
 
 .total-stat {
-  border-top-color: #164e63;
+  background: linear-gradient(135deg, #164e63, #087e8b);
 }
 
 .pending-stat {
-  border-top-color: #d97706;
+  background: linear-gradient(135deg, #b45309, #ea580c);
 }
 
 .progress-stat {
-  border-top-color: #2563eb;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
 }
 
 .resolved-stat {
-  border-top-color: #16a34a;
+  background: linear-gradient(135deg, #15803d, #16a34a);
 }
+
+/* PENDING ALERT */
 
 .admin-alert {
   display: flex;
@@ -208,6 +221,8 @@
   color: #9a3412;
   font-size: 13px;
 }
+
+/* MAP AND COMPLAINT SECTIONS */
 
 .admin-map-section,
 .admin-complaints {
@@ -253,6 +268,8 @@
   white-space: nowrap;
 }
 
+/* FILTERS */
+
 .admin-filters {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
@@ -277,6 +294,8 @@
 .admin-status-control select:focus {
   border-color: #0d9488;
 }
+
+/* COMPLAINT CARDS */
 
 .admin-complaint-list {
   display: grid;
@@ -423,6 +442,8 @@
   color: #0d9488;
 }
 
+/* MESSAGES */
+
 .admin-message,
 .admin-empty {
   padding: 30px;
@@ -452,6 +473,8 @@
   color: #b91c1c;
   border-radius: 10px;
 }
+
+/* RESPONSIVE DESIGN */
 
 @media (max-width: 900px) {
   .admin-stats {
@@ -549,4 +572,33 @@
   .admin-details-button {
     text-align: center;
   }
+}
+
+/* FORCE ADMIN STATISTICS CARD COLORS */
+
+.admin-page .admin-stats .admin-stat.total-stat {
+  background: #164e63 !important;
+  border: none !important;
+}
+
+.admin-page .admin-stats .admin-stat.pending-stat {
+  background: #c2410c !important;
+  border: none !important;
+}
+
+.admin-page .admin-stats .admin-stat.progress-stat {
+  background: #1d4ed8 !important;
+  border: none !important;
+}
+
+.admin-page .admin-stats .admin-stat.resolved-stat {
+  background: #15803d !important;
+  border: none !important;
+}
+
+.admin-page .admin-stats .admin-stat span,
+.admin-page .admin-stats .admin-stat h2,
+.admin-page .admin-stats .admin-stat p {
+  color: #ffffff !important;
+  opacity: 1 !important;
 }

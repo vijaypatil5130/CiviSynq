@@ -143,6 +143,46 @@ function AdminDashboard() {
 
   return (
     <div className="admin-page">
+
+      {/* Dedicated statistics card colours */}
+      <style>{`
+        .admin-page .admin-stats .admin-stat.civisynq-total {
+          background: #164e63 !important;
+          border: none !important;
+        }
+
+        .admin-page .admin-stats .admin-stat.civisynq-pending {
+          background: #c2410c !important;
+          border: none !important;
+        }
+
+        .admin-page .admin-stats .admin-stat.civisynq-progress {
+          background: #1d4ed8 !important;
+          border: none !important;
+        }
+
+        .admin-page .admin-stats .admin-stat.civisynq-resolved {
+          background: #15803d !important;
+          border: none !important;
+        }
+
+        .admin-page .admin-stats .admin-stat.civisynq-total span,
+        .admin-page .admin-stats .admin-stat.civisynq-total h2,
+        .admin-page .admin-stats .admin-stat.civisynq-total p,
+        .admin-page .admin-stats .admin-stat.civisynq-pending span,
+        .admin-page .admin-stats .admin-stat.civisynq-pending h2,
+        .admin-page .admin-stats .admin-stat.civisynq-pending p,
+        .admin-page .admin-stats .admin-stat.civisynq-progress span,
+        .admin-page .admin-stats .admin-stat.civisynq-progress h2,
+        .admin-page .admin-stats .admin-stat.civisynq-progress p,
+        .admin-page .admin-stats .admin-stat.civisynq-resolved span,
+        .admin-page .admin-stats .admin-stat.civisynq-resolved h2,
+        .admin-page .admin-stats .admin-stat.civisynq-resolved p {
+          color: #ffffff !important;
+          opacity: 1 !important;
+        }
+      `}</style>
+
       <header className="admin-header">
         <Link to="/admin-dashboard" className="admin-brand">
           Civi<span>Synq</span>
@@ -179,25 +219,25 @@ function AdminDashboard() {
         </section>
 
         <section className="admin-stats">
-          <div className="admin-stat total-stat">
+          <div className="admin-stat total-stat civisynq-total">
             <span>Total Complaints</span>
             <h2>{complaints.length}</h2>
             <p>All reported issues</p>
           </div>
 
-          <div className="admin-stat pending-stat">
+          <div className="admin-stat pending-stat civisynq-pending">
             <span>Pending</span>
             <h2>{pendingCount}</h2>
             <p>Awaiting attention</p>
           </div>
 
-          <div className="admin-stat progress-stat">
+          <div className="admin-stat progress-stat civisynq-progress">
             <span>In Progress</span>
             <h2>{progressCount}</h2>
             <p>Currently being handled</p>
           </div>
 
-          <div className="admin-stat resolved-stat">
+          <div className="admin-stat resolved-stat civisynq-resolved">
             <span>Resolved</span>
             <h2>{resolvedCount}</h2>
             <p>Successfully completed</p>
