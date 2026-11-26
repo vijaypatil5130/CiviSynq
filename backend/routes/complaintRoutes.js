@@ -18,6 +18,29 @@ const allowedCategories = [
   'Other'
 ];
 
+// Normalize category names for accurate counting
+const normalizeCategory = (value) => {
+  const category = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, ' ');
+
+  const categoryAliases = {
+    garbage: 'Garbage',
+    'road damage': 'Road Damage',
+    road: 'Road Damage',
+    electricity: 'Electricity',
+    streetlight: 'Electricity',
+    'street light': 'Electricity',
+    'street lighting': 'Electricity',
+    'water supply': 'Water Supply',
+    drainage: 'Drainage',
+    other: 'Other'
+  };
+
+  return categoryAliases[category] || null;
+};
+
 // Upload image buffer to Cloudinary
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
@@ -221,28 +244,26 @@ router.get('/community/all', authMiddleware, async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    // Count complaints in each category
-    const categoryCounts = await Complaint.aggregate([
-      {
-        $group: {
-          _id: '$category',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Convert counts into a lookup object
+    // Count every complaint using normalized category names
     const countMap = {};
 
-    categoryCounts.forEach((item) => {
-      countMap[item._id] = item.count;
+    allowedCategories.forEach((category) => {
+      countMap[category] = 0;
     });
 
-    // Include every available category, even if its count is zero
+    complaints.forEach((complaint) => {
+      const normalizedCategory = normalizeCategory(complaint.category);
+
+      if (normalizedCategory) {
+        countMap[normalizedCategory] += 1;
+      }
+    });
+
+    // Generate dynamic category ranking
     const categoryRanking = allowedCategories
       .map((category) => ({
         category,
-        count: countMap[category] || 0
+        count: countMap[category]
       }))
       .sort((a, b) => {
         if (b.count !== a.count) {
