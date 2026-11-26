@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import AdminComplaintMap from '../components/AdminComplaintMap';
+import { API_URL, getImageUrl } from '../config/api';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
@@ -26,7 +27,7 @@ function AdminDashboard() {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/admin/all', {
+      const response = await fetch(`${API_URL}/admin/all`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -61,7 +62,7 @@ function AdminDashboard() {
       setUpdatingId(complaintId);
 
       const response = await fetch(
-        `http://localhost:5000/api/admin/${complaintId}/status`,
+        `${API_URL}/admin/${complaintId}/status`,
         {
           method: 'PATCH',
           headers: {
@@ -335,7 +336,7 @@ function AdminDashboard() {
                 {complaint.image && (
                   <img
                     className="admin-complaint-image"
-                    src={`http://localhost:5000${complaint.image}`}
+                    src={getImageUrl(complaint.image)}
                     alt="Citizen reported issue"
                   />
                 )}

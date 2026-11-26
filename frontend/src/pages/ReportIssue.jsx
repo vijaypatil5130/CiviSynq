@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
+import { API_URL } from '../config/api';
 import './ReportIssue.css';
 
 function ReportIssue() {
@@ -84,7 +85,7 @@ function ReportIssue() {
         complaintData.append('image', image);
       }
 
-      const response = await fetch('http://localhost:5000/api/complaints', {
+      const response = await fetch(`${API_URL}/complaints`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`

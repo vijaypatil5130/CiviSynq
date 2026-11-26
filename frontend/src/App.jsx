@@ -1,6 +1,7 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { API_URL } from './config/api';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -28,7 +29,7 @@ function ProtectedRoute({ children, allowedRole }) {
       }
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/me', {
+        const response = await fetch(`${API_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

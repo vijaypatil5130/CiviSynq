@@ -1,9 +1,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../config/api';
 import './Dashboard.css';
-
-const API_URL = 'http://localhost:5000/api';
 
 function Dashboard() {
   const navigate = useNavigate();

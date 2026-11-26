@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { API_URL, getImageUrl } from '../config/api';
 import './ComplaintDetails.css';
 
 function ComplaintDetails() {
@@ -19,7 +20,7 @@ function ComplaintDetails() {
     const fetchComplaint = async () => {
       try {
         const response = await fetch(
-          'http://localhost:5000/api/admin/all',
+          `${API_URL}/admin/all`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -63,7 +64,7 @@ function ComplaintDetails() {
       setStatusMessage('');
 
       const response = await fetch(
-        `http://localhost:5000/api/admin/${id}/status`,
+        `${API_URL}/admin/${id}/status`,
         {
           method: 'PATCH',
           headers: {
@@ -134,7 +135,7 @@ function ComplaintDetails() {
           {complaint.image && (
             <img
               className="details-image"
-              src={`http://localhost:5000${complaint.image}`}
+              src={getImageUrl(complaint.image)}
               alt="Reported civic issue"
             />
           )}

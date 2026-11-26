@@ -1,6 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { API_URL, getImageUrl } from '../config/api';
 import './MyComplaints.css';
 
 function MyComplaints() {
@@ -23,7 +24,7 @@ function MyComplaints() {
         }
 
         const response = await fetch(
-          'http://localhost:5000/api/complaints/my-complaints',
+          `${API_URL}/complaints/my-complaints`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -278,7 +279,7 @@ function MyComplaints() {
                             src={
   complaint.image?.startsWith('http')
     ? complaint.image
-    : `http://localhost:5000${complaint.image}`
+    : getImageUrl(complaint.image)
 }
                             alt="Reported civic issue"
                             className="complaint-image"

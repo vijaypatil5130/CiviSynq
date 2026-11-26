@@ -1,9 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_URL } from '../config/api';
 import './Profile.css';
-
-const API_URL = 'http://localhost:5000/api';
 
 function Profile() {
   const navigate = useNavigate();
