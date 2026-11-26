@@ -16,6 +16,8 @@ function Dashboard() {
     user = null;
   }
 
+  const currentUserId = user?._id || user?.id;
+
   const [complaints, setComplaints] = useState([]);
   const [communityComplaints, setCommunityComplaints] = useState([]);
   const [categoryRanking, setCategoryRanking] = useState([]);
@@ -27,6 +29,10 @@ function Dashboard() {
   const [error, setError] = useState('');
   const [communityError, setCommunityError] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const [commentInputs, setCommentInputs] = useState({});
+  const [actionLoading, setActionLoading] = useState({});
+  const [communityActionError, setCommunityActionError] = useState('');
 
   const fetchDashboardData = useCallback(async () => {
     if (!token) return;
@@ -115,6 +121,176 @@ function Dashboard() {
     setLoading(true);
     setCommunityLoading(true);
     fetchDashboardData();
+  };
+
+  // Set loading state for individual community actions
+  const setActionState = (key, value) => {
+    setActionLoading((previous) => ({
+      ...previous,
+      [key]: value
+    }));
+  };
+
+  // Support or remove support from a complaint
+  const handleSupport = async (complaint) => {
+    const id = complaint._id;
+    const key = `support-${id}`;
+
+    if (actionLoading[key]) return;
+
+    setCommunityActionError('');
+    setActionState(key, true);
+
+    const wasSupported = Boolean(complaint.hasSupported);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/complaints/${id}/support`,
+        {
+          method: wasSupported ? 'DELETE' : 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to update support.');
+      }
+
+      setCommunityComplaints((previous) =>
+        previous.map((item) =>
+          item._id === id
+            ? {
+                ...item,
+                hasSupported: data.hasSupported,
+                supportCount: data.supportCount
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      setCommunityActionError(err.message);
+    } finally {
+      setActionState(key, false);
+    }
+  };
+
+  // Update comment input
+  const handleCommentInput = (complaintId, value) => {
+    setCommentInputs((previous) => ({
+      ...previous,
+      [complaintId]: value
+    }));
+  };
+
+  // Add a new comment
+  const handleAddComment = async (event, complaintId) => {
+    event.preventDefault();
+
+    const text = (commentInputs[complaintId] || '').trim();
+    const key = `comment-${complaintId}`;
+
+    if (!text || actionLoading[key]) return;
+
+    setCommunityActionError('');
+    setActionState(key, true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/complaints/${complaintId}/comments`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ text })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to add comment.');
+      }
+
+      setCommunityComplaints((previous) =>
+        previous.map((complaint) =>
+          complaint._id === complaintId
+            ? {
+                ...complaint,
+                comments: [
+                  ...(complaint.comments || []),
+                  data.comment
+                ]
+              }
+            : complaint
+        )
+      );
+
+      setCommentInputs((previous) => ({
+        ...previous,
+        [complaintId]: ''
+      }));
+    } catch (err) {
+      setCommunityActionError(err.message);
+    } finally {
+      setActionState(key, false);
+    }
+  };
+
+  // Delete your own comment
+  const handleDeleteComment = async (complaintId, commentId) => {
+    const key = `delete-${commentId}`;
+
+    if (actionLoading[key]) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this comment?'
+    );
+
+    if (!confirmed) return;
+
+    setCommunityActionError('');
+    setActionState(key, true);
+
+    try {
+      const response = await fetch(
+        `${API_URL}/complaints/${complaintId}/comments/${commentId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to delete comment.');
+      }
+
+      setCommunityComplaints((previous) =>
+        previous.map((complaint) =>
+          complaint._id === complaintId
+            ? {
+                ...complaint,
+                comments: (complaint.comments || []).filter(
+                  (comment) => comment._id !== commentId
+                )
+              }
+            : complaint
+        )
+      );
+    } catch (err) {
+      setCommunityActionError(err.message);
+    } finally {
+      setActionState(key, false);
+    }
   };
 
   const totalComplaints = complaints.length;
@@ -480,6 +656,15 @@ function Dashboard() {
             </span>
           </div>
 
+          {communityActionError && (
+            <div className="community-message community-error">
+              {communityActionError}
+              <button onClick={() => setCommunityActionError('')}>
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {communityLoading ? (
             <div className="community-message">
               Loading community complaints...
@@ -571,6 +756,151 @@ function Dashboard() {
                           View on Map ↗
                         </a>
                       )}
+
+                    {/* SUPPORT / I FACE THIS TOO */}
+
+                    <div className="community-engagement">
+                      <div className="support-information">
+                        <span className="support-icon">🤝</span>
+                        <div>
+                          <strong>
+                            {complaint.supportCount || 0} people
+                          </strong>
+                          <p>face this too</p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={`support-button ${
+                          complaint.hasSupported ? 'supported' : ''
+                        }`}
+                        onClick={() => handleSupport(complaint)}
+                        disabled={Boolean(
+                          actionLoading[`support-${complaint._id}`]
+                        )}
+                      >
+                        {actionLoading[`support-${complaint._id}`]
+                          ? 'Updating...'
+                          : complaint.hasSupported
+                            ? '✓ You face this too'
+                            : '↻ I face this too'}
+                      </button>
+                    </div>
+
+                    {/* COMMENTS */}
+
+                    <div className="community-comments">
+                      <h4>
+                        💬 Comments ({(complaint.comments || []).length})
+                      </h4>
+
+                      {(complaint.comments || []).length === 0 ? (
+                        <p className="no-comments">
+                          No comments yet. Share your experience.
+                        </p>
+                      ) : (
+                        <div className="community-comment-list">
+                          {complaint.comments.map((comment) => {
+                            const authorId =
+                              comment.author?._id || comment.author;
+
+                            const isOwnComment =
+                              currentUserId &&
+                              authorId &&
+                              authorId.toString() === currentUserId.toString();
+
+                            return (
+                              <div
+                                className="community-comment"
+                                key={comment._id}
+                              >
+                                <div className="comment-heading">
+                                  <strong>
+                                    {comment.author?.fullName || 'Citizen'}
+                                  </strong>
+
+                                  <span>
+                                    {formatDate(comment.createdAt)}
+                                  </span>
+                                </div>
+
+                                <p>{comment.text}</p>
+
+                                {isOwnComment && (
+                                  <button
+                                    type="button"
+                                    className="delete-comment-button"
+                                    onClick={() =>
+                                      handleDeleteComment(
+                                        complaint._id,
+                                        comment._id
+                                      )
+                                    }
+                                    disabled={Boolean(
+                                      actionLoading[
+                                        `delete-${comment._id}`
+                                      ]
+                                    )}
+                                  >
+                                    {actionLoading[
+                                      `delete-${comment._id}`
+                                    ]
+                                      ? 'Deleting...'
+                                      : 'Delete'}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      <form
+                        className="community-comment-form"
+                        onSubmit={(event) =>
+                          handleAddComment(event, complaint._id)
+                        }
+                      >
+                        <textarea
+                          value={commentInputs[complaint._id] || ''}
+                          onChange={(event) =>
+                            handleCommentInput(
+                              complaint._id,
+                              event.target.value
+                            )
+                          }
+                          placeholder="Share your experience with this issue..."
+                          maxLength={1000}
+                          rows={2}
+                        />
+
+                        <div className="comment-form-footer">
+                          <span>
+                            {(commentInputs[complaint._id] || '').length}
+                            /1000
+                          </span>
+
+                          <button
+                            type="submit"
+                            disabled={
+                              !(
+                                commentInputs[complaint._id] || ''
+                              ).trim() ||
+                              Boolean(
+                                actionLoading[
+                                  `comment-${complaint._id}`
+                                ]
+                              )
+                            }
+                          >
+                            {actionLoading[`comment-${complaint._id}`]
+                              ? 'Posting...'
+                              : 'Post Comment'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </article>
               ))}

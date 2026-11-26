@@ -1,5 +1,6 @@
 
 const express = require('express');
+const mongoose = require('mongoose');
 const { Readable } = require('stream');
 
 const Complaint = require('../models/Complaint');
@@ -18,7 +19,6 @@ const allowedCategories = [
   'Other'
 ];
 
-// Normalize category names for accurate counting
 const normalizeCategory = (value) => {
   const category = String(value || '')
     .trim()
@@ -27,8 +27,8 @@ const normalizeCategory = (value) => {
 
   const categoryAliases = {
     garbage: 'Garbage',
-    'road damage': 'Road Damage',
     road: 'Road Damage',
+    'road damage': 'Road Damage',
     electricity: 'Electricity',
     streetlight: 'Electricity',
     'street light': 'Electricity',
@@ -41,6 +41,8 @@ const normalizeCategory = (value) => {
   return categoryAliases[category] || null;
 };
 
+const validId = (id) => mongoose.isValidObjectId(id);
+
 // Upload image buffer to Cloudinary
 const uploadToCloudinary = (buffer) => {
   return new Promise((resolve, reject) => {
@@ -50,10 +52,7 @@ const uploadToCloudinary = (buffer) => {
         resource_type: 'image'
       },
       (error, result) => {
-        if (error) {
-          return reject(error);
-        }
-
+        if (error) return reject(error);
         resolve(result);
       }
     );
@@ -128,7 +127,6 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       });
     }
 
-    // Validate map coordinates
     let parsedLatitude;
     let parsedLongitude;
 
@@ -155,12 +153,10 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       }
     }
 
-    // Upload image to Cloudinary if provided
     if (req.file) {
       uploadedImage = await uploadToCloudinary(req.file.buffer);
     }
 
-    // Save complaint in MongoDB
     const complaint = new Complaint({
       title: cleanTitle,
       category: cleanCategory,
@@ -180,15 +176,11 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     });
 
   } catch (error) {
-    // Remove uploaded image if complaint saving fails
     if (uploadedImage?.public_id) {
       try {
         await cloudinary.uploader.destroy(uploadedImage.public_id);
       } catch (cleanupError) {
-        console.error(
-          'Cloudinary cleanup failed:',
-          cleanupError.message
-        );
+        console.error('Cloudinary cleanup failed:', cleanupError.message);
       }
     }
 
@@ -213,9 +205,7 @@ router.get('/my-complaints', authMiddleware, async (req, res) => {
       reportedBy: req.user.id
     }).sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      complaints
-    });
+    return res.status(200).json({ complaints });
 
   } catch (error) {
     console.error('Fetch complaints error:', error);
@@ -226,6 +216,232 @@ router.get('/my-complaints', authMiddleware, async (req, res) => {
   }
 });
 
+// Support a complaint: I face this too
+router.put('/:id/support', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({
+        message: 'Only citizens can support complaints.'
+      });
+    }
+
+    if (!validId(req.params.id)) {
+      return res.status(400).json({
+        message: 'Invalid complaint ID.'
+      });
+    }
+
+    const complaint = await Complaint.findByIdAndUpdate(
+      req.params.id,
+      {
+        $addToSet: {
+          supportedBy: req.user.id
+        }
+      },
+      { new: true }
+    );
+
+    if (!complaint) {
+      return res.status(404).json({
+        message: 'Complaint not found.'
+      });
+    }
+
+    return res.status(200).json({
+      message: 'You have supported this complaint.',
+      supportCount: complaint.supportedBy.length,
+      hasSupported: true
+    });
+
+  } catch (error) {
+    console.error('Support complaint error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to support this complaint.'
+    });
+  }
+});
+
+// Remove support from a complaint
+router.delete('/:id/support', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({
+        message: 'Only citizens can remove their support.'
+      });
+    }
+
+    if (!validId(req.params.id)) {
+      return res.status(400).json({
+        message: 'Invalid complaint ID.'
+      });
+    }
+
+    const complaint = await Complaint.findByIdAndUpdate(
+      req.params.id,
+      {
+        $pull: {
+          supportedBy: req.user.id
+        }
+      },
+      { new: true }
+    );
+
+    if (!complaint) {
+      return res.status(404).json({
+        message: 'Complaint not found.'
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Your support has been removed.',
+      supportCount: complaint.supportedBy.length,
+      hasSupported: false
+    });
+
+  } catch (error) {
+    console.error('Remove support error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to remove your support.'
+    });
+  }
+});
+
+// Add a comment to a complaint
+router.post('/:id/comments', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({
+        message: 'Only citizens can comment on complaints.'
+      });
+    }
+
+    if (!validId(req.params.id)) {
+      return res.status(400).json({
+        message: 'Invalid complaint ID.'
+      });
+    }
+
+    const text = String(req.body.text || '').trim();
+
+    if (!text) {
+      return res.status(400).json({
+        message: 'Comment cannot be empty.'
+      });
+    }
+
+    if (text.length > 1000) {
+      return res.status(400).json({
+        message: 'Comment cannot exceed 1000 characters.'
+      });
+    }
+
+    const complaint = await Complaint.findById(req.params.id);
+
+    if (!complaint) {
+      return res.status(404).json({
+        message: 'Complaint not found.'
+      });
+    }
+
+    complaint.comments.push({
+      text,
+      author: req.user.id
+    });
+
+    await complaint.save();
+
+    const newComment = complaint.comments[
+      complaint.comments.length - 1
+    ];
+
+    await complaint.populate({
+      path: 'comments.author',
+      select: 'fullName'
+    });
+
+    const populatedComment = complaint.comments.id(newComment._id);
+
+    return res.status(201).json({
+      message: 'Comment added successfully.',
+      comment: populatedComment
+    });
+
+  } catch (error) {
+    console.error('Add comment error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to add comment.'
+    });
+  }
+});
+
+// Delete a comment: owner or admin only
+router.delete(
+  '/:id/comments/:commentId',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      if (
+        !validId(req.params.id) ||
+        !validId(req.params.commentId)
+      ) {
+        return res.status(400).json({
+          message: 'Invalid complaint or comment ID.'
+        });
+      }
+
+      if (!['citizen', 'admin'].includes(req.user.role)) {
+        return res.status(403).json({
+          message: 'You are not allowed to delete comments.'
+        });
+      }
+
+      const complaint = await Complaint.findById(req.params.id);
+
+      if (!complaint) {
+        return res.status(404).json({
+          message: 'Complaint not found.'
+        });
+      }
+
+      const comment = complaint.comments.id(req.params.commentId);
+
+      if (!comment) {
+        return res.status(404).json({
+          message: 'Comment not found.'
+        });
+      }
+
+      const isAdmin = req.user.role === 'admin';
+      const isCommentOwner =
+        comment.author.toString() === req.user.id.toString();
+
+      if (!isAdmin && !isCommentOwner) {
+        return res.status(403).json({
+          message: 'You can delete only your own comments.'
+        });
+      }
+
+      comment.deleteOne();
+      await complaint.save();
+
+      return res.status(200).json({
+        message: 'Comment deleted successfully.',
+        commentId: req.params.commentId
+      });
+
+    } catch (error) {
+      console.error('Delete comment error:', error);
+
+      return res.status(500).json({
+        message: 'Unable to delete comment.'
+      });
+    }
+  }
+);
+
 // Get all community complaints and category priority ranking
 router.get('/community/all', authMiddleware, async (req, res) => {
   try {
@@ -235,16 +451,15 @@ router.get('/community/all', authMiddleware, async (req, res) => {
       });
     }
 
-    // Fetch complaints from all citizens
     const complaints = await Complaint.find({})
       .select(
-        'title category description location latitude longitude image status createdAt updatedAt reportedBy'
+        'title category description location latitude longitude image status createdAt updatedAt reportedBy supportedBy comments'
       )
       .populate('reportedBy', 'fullName')
+      .populate('comments.author', 'fullName')
       .sort({ createdAt: -1 })
       .lean();
 
-    // Count every complaint using normalized category names
     const countMap = {};
 
     allowedCategories.forEach((category) => {
@@ -259,7 +474,6 @@ router.get('/community/all', authMiddleware, async (req, res) => {
       }
     });
 
-    // Generate dynamic category ranking
     const categoryRanking = allowedCategories
       .map((category) => ({
         category,
@@ -277,10 +491,25 @@ router.get('/community/all', authMiddleware, async (req, res) => {
         priority: index + 1
       }));
 
+    const currentUserId = req.user.id.toString();
+
+    const communityComplaints = complaints.map((complaint) => {
+      const supporters = complaint.supportedBy || [];
+
+      return {
+        ...complaint,
+        supportCount: supporters.length,
+        hasSupported: supporters.some(
+          (userId) => userId.toString() === currentUserId
+        ),
+        comments: complaint.comments || []
+      };
+    });
+
     return res.status(200).json({
       message: 'Community complaints fetched successfully.',
-      totalComplaints: complaints.length,
-      complaints,
+      totalComplaints: communityComplaints.length,
+      complaints: communityComplaints,
       categoryRanking
     });
 
