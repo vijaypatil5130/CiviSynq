@@ -1,0 +1,138 @@
+
+.details-page {
+  min-height: 100vh;
+  background: #f4f7fb;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.details-container {
+  max-width: 1000px;
+  margin: auto;
+}
+
+.details-back {
+  display: inline-block;
+  margin-bottom: 25px;
+  color: #164e63;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.details-back:hover {
+  text-decoration: underline;
+}
+
+.details-heading {
+  margin-bottom: 25px;
+}
+
+.details-heading p {
+  color: #0d9488;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.details-heading h1 {
+  font-size: 32px;
+  color: #172554;
+  margin: 8px 0;
+}
+
+.details-heading span {
+  color: #64748b;
+}
+
+.details-card {
+  background: white;
+  padding: 30px;
+  border-radius: 14px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.06);
+}
+
+.details-card h2 {
+  color: #172554;
+  font-size: 25px;
+  margin-top: 0;
+}
+
+.details-status {
+  display: inline-block;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.details-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.details-status.in-progress {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.details-status.resolved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.details-image {
+  display: block;
+  width: 100%;
+  max-width: 650px;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin: 15px 0 25px;
+}
+
+.details-section {
+  border-top: 1px solid #e2e8f0;
+  padding: 22px 0;
+}
+
+.details-section h3 {
+  color: #164e63;
+  margin-bottom: 15px;
+}
+
+.details-section p {
+  color: #475569;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.details-section strong {
+  color: #172554;
+}
+
+.details-section a {
+  color: #0d9488;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.details-section a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  .details-page {
+    padding: 25px 12px;
+  }
+
+  .details-card {
+    padding: 20px;
+  }
+
+  .details-heading h1 {
+    font-size: 26px;
+  }
+}

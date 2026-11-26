@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Build files
+dist/
+
+# Uploaded complaint images
+backend/uploads/
+
+# Logs
+npm-debug.log*
+backend/uploads/
