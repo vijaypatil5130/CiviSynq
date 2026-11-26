@@ -35,7 +35,6 @@ const uploadToCloudinary = (buffer) => {
       }
     );
 
-    // Send the complete image buffer as one stream chunk
     Readable.from([buffer]).pipe(uploadStream);
   });
 };
@@ -60,7 +59,6 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
       longitude
     } = req.body;
 
-    // Validate required fields
     if (!title || !category || !description || !location) {
       return res.status(400).json({
         message: 'Please provide all required complaint details.'
@@ -159,7 +157,7 @@ router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
     });
 
   } catch (error) {
-    // Remove uploaded Cloudinary image if saving fails
+    // Remove uploaded image if complaint saving fails
     if (uploadedImage?.public_id) {
       try {
         await cloudinary.uploader.destroy(uploadedImage.public_id);
@@ -201,6 +199,75 @@ router.get('/my-complaints', authMiddleware, async (req, res) => {
 
     return res.status(500).json({
       message: 'Unable to fetch complaints.'
+    });
+  }
+});
+
+// Get all community complaints and category priority ranking
+router.get('/community/all', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({
+        message: 'Only citizens can access community complaints.'
+      });
+    }
+
+    // Fetch complaints from all citizens
+    const complaints = await Complaint.find({})
+      .select(
+        'title category description location latitude longitude image status createdAt updatedAt reportedBy'
+      )
+      .populate('reportedBy', 'fullName')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Count complaints in each category
+    const categoryCounts = await Complaint.aggregate([
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert counts into a lookup object
+    const countMap = {};
+
+    categoryCounts.forEach((item) => {
+      countMap[item._id] = item.count;
+    });
+
+    // Include every available category, even if its count is zero
+    const categoryRanking = allowedCategories
+      .map((category) => ({
+        category,
+        count: countMap[category] || 0
+      }))
+      .sort((a, b) => {
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+
+        return a.category.localeCompare(b.category);
+      })
+      .map((item, index) => ({
+        ...item,
+        priority: index + 1
+      }));
+
+    return res.status(200).json({
+      message: 'Community complaints fetched successfully.',
+      totalComplaints: complaints.length,
+      complaints,
+      categoryRanking
+    });
+
+  } catch (error) {
+    console.error('Community complaints error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to fetch community complaints.'
     });
   }
 });
