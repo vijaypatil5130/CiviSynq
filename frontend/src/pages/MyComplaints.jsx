@@ -275,7 +275,11 @@ function MyComplaints() {
                       {complaint.image && (
                         <div className="complaint-image-wrapper">
                           <img
-                            src={`http://localhost:5000${complaint.image}`}
+                            src={
+  complaint.image?.startsWith('http')
+    ? complaint.image
+    : `http://localhost:5000${complaint.image}`
+}
                             alt="Reported civic issue"
                             className="complaint-image"
                           />

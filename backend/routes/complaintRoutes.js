@@ -1,13 +1,13 @@
 
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-
-const router = express.Router();
+const { Readable } = require('stream');
 
 const Complaint = require('../models/Complaint');
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
+const cloudinary = require('../config/cloudinary');
+
+const router = express.Router();
 
 const allowedCategories = [
   'Garbage',
@@ -18,168 +18,168 @@ const allowedCategories = [
   'Other'
 ];
 
-const removeUploadedFile = (file) => {
-  if (file) {
-    const filePath = path.join(__dirname, '../uploads', file.filename);
-
-    fs.unlink(filePath, () => {});
-  }
-};
-
-// CREATE COMPLAINT
-router.post(
-  '/',
-  authMiddleware,
-  (req, res, next) => {
-    if (req.user.role !== 'citizen') {
-      return res.status(403).json({
-        message: 'Only citizens can submit complaints.'
-      });
-    }
-
-    next();
-  },
-  upload.single('image'),
-  async (req, res) => {
-    try {
-      const {
-        title,
-        category,
-        description,
-        location,
-        latitude,
-        longitude
-      } = req.body;
-
-      if (
-        typeof title !== 'string' ||
-        typeof category !== 'string' ||
-        typeof description !== 'string' ||
-        typeof location !== 'string'
-      ) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Please provide valid complaint details.'
-        });
-      }
-
-      const cleanTitle = title.trim();
-      const cleanCategory = category.trim();
-      const cleanDescription = description.trim();
-      const cleanLocation = location.trim();
-
-      if (
-        !cleanTitle ||
-        !cleanCategory ||
-        !cleanDescription ||
-        !cleanLocation
-      ) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Please fill in all required fields.'
-        });
-      }
-
-      if (cleanTitle.length > 120) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Complaint title cannot exceed 120 characters.'
-        });
-      }
-
-      if (cleanDescription.length > 3000) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Description cannot exceed 3000 characters.'
-        });
-      }
-
-      if (cleanLocation.length > 250) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Location cannot exceed 250 characters.'
-        });
-      }
-
-      if (!allowedCategories.includes(cleanCategory)) {
-        removeUploadedFile(req.file);
-
-        return res.status(400).json({
-          message: 'Please select a valid complaint category.'
-        });
-      }
-
-      let savedLatitude = null;
-      let savedLongitude = null;
-
-      const hasLatitude = latitude !== undefined && latitude !== '';
-      const hasLongitude = longitude !== undefined && longitude !== '';
-
-      if (hasLatitude || hasLongitude) {
-        const lat = Number(latitude);
-        const lng = Number(longitude);
-
-        if (
-          !hasLatitude ||
-          !hasLongitude ||
-          !Number.isFinite(lat) ||
-          !Number.isFinite(lng) ||
-          lat < -90 ||
-          lat > 90 ||
-          lng < -180 ||
-          lng > 180
-        ) {
-          removeUploadedFile(req.file);
-
-          return res.status(400).json({
-            message: 'Please select a valid location on the map.'
-          });
+// Upload an image buffer to Cloudinary
+const uploadToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'civisynq/complaints',
+        resource_type: 'image'
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
         }
 
-        savedLatitude = lat;
-        savedLongitude = lng;
+        resolve(result);
       }
+    );
 
-      const complaint = new Complaint({
-        title: cleanTitle,
-        category: cleanCategory,
-        description: cleanDescription,
-        location: cleanLocation,
-        latitude: savedLatitude,
-        longitude: savedLongitude,
-        image: req.file ? `/uploads/${req.file.filename}` : '',
-        reportedBy: req.user.id
-      });
+    Readable.from(buffer).pipe(uploadStream);
+  });
+};
 
-      await complaint.save();
+// Create a new complaint
+router.post('/', authMiddleware, upload.single('image'), async (req, res) => {
+  let uploadedImage = null;
 
-      return res.status(201).json({
-        message: 'Complaint submitted successfully!',
-        complaint
-      });
-    } catch (error) {
-      removeUploadedFile(req.file);
-
-      console.error('Complaint Submission Error:', error.message);
-
-      return res.status(500).json({
-        message: 'Unable to submit complaint.'
+  try {
+    if (req.user.role !== 'citizen') {
+      return res.status(403).json({
+        message: 'Only citizens can report complaints.'
       });
     }
-  }
-);
 
-// GET CITIZEN'S OWN COMPLAINTS
+    const {
+      title,
+      category,
+      description,
+      location,
+      latitude,
+      longitude
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !category || !description || !location) {
+      return res.status(400).json({
+        message: 'Please provide all required complaint details.'
+      });
+    }
+
+    const cleanTitle = title.trim();
+    const cleanCategory = category.trim();
+    const cleanDescription = description.trim();
+    const cleanLocation = location.trim();
+
+    if (
+      !cleanTitle ||
+      !cleanCategory ||
+      !cleanDescription ||
+      !cleanLocation
+    ) {
+      return res.status(400).json({
+        message: 'Complaint fields cannot be empty.'
+      });
+    }
+
+    if (!allowedCategories.includes(cleanCategory)) {
+      return res.status(400).json({
+        message: 'Invalid complaint category.'
+      });
+    }
+
+    if (cleanTitle.length > 120) {
+      return res.status(400).json({
+        message: 'Title cannot exceed 120 characters.'
+      });
+    }
+
+    if (cleanDescription.length > 3000) {
+      return res.status(400).json({
+        message: 'Description cannot exceed 3000 characters.'
+      });
+    }
+
+    if (cleanLocation.length > 250) {
+      return res.status(400).json({
+        message: 'Location cannot exceed 250 characters.'
+      });
+    }
+
+    // Validate map coordinates
+    let parsedLatitude;
+    let parsedLongitude;
+
+    if (
+      latitude !== undefined && latitude !== '' ||
+      longitude !== undefined && longitude !== ''
+    ) {
+      parsedLatitude = Number(latitude);
+      parsedLongitude = Number(longitude);
+
+      if (
+        latitude === undefined || latitude === '' ||
+        longitude === undefined || longitude === '' ||
+        !Number.isFinite(parsedLatitude) ||
+        !Number.isFinite(parsedLongitude) ||
+        parsedLatitude < -90 ||
+        parsedLatitude > 90 ||
+        parsedLongitude < -180 ||
+        parsedLongitude > 180
+      ) {
+        return res.status(400).json({
+          message: 'Please provide valid latitude and longitude.'
+        });
+      }
+    }
+
+    // Upload image to Cloudinary if provided
+    if (req.file) {
+      uploadedImage = await uploadToCloudinary(req.file.buffer);
+    }
+
+    const complaint = new Complaint({
+      title: cleanTitle,
+      category: cleanCategory,
+      description: cleanDescription,
+      location: cleanLocation,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      image: uploadedImage ? uploadedImage.secure_url : '',
+      reportedBy: req.user.id
+    });
+
+    await complaint.save();
+
+    return res.status(201).json({
+      message: 'Complaint submitted successfully.',
+      complaint
+    });
+
+  } catch (error) {
+    // Remove uploaded Cloudinary image if saving the complaint failed
+    if (uploadedImage?.public_id) {
+      try {
+        await cloudinary.uploader.destroy(uploadedImage.public_id);
+      } catch (cleanupError) {
+        console.error('Cloudinary cleanup failed:', cleanupError.message);
+      }
+    }
+
+    console.error('Complaint creation error:', error);
+
+    return res.status(500).json({
+      message: 'Unable to submit complaint. Please try again.'
+    });
+  }
+});
+
+// Get complaints submitted by the logged-in citizen
 router.get('/my-complaints', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'citizen') {
       return res.status(403).json({
-        message: 'Access denied.'
+        message: 'Only citizens can access their complaints.'
       });
     }
 
@@ -187,9 +187,12 @@ router.get('/my-complaints', authMiddleware, async (req, res) => {
       reportedBy: req.user.id
     }).sort({ createdAt: -1 });
 
-    return res.status(200).json({ complaints });
+    return res.status(200).json({
+      complaints
+    });
+
   } catch (error) {
-    console.error('Fetch Complaints Error:', error.message);
+    console.error('Fetch complaints error:', error);
 
     return res.status(500).json({
       message: 'Unable to fetch complaints.'
